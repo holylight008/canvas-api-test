@@ -28,8 +28,11 @@ class DisplayObjectContainer extends DisplayObject {
 class TextField extends DisplayObject {
     text: string = "";
     font:string="";
+    color:string="#000000";
     draw(canvas2D: CanvasRenderingContext2D) {
+        canvas2D.globalAlpha=this.alpha;
         canvas2D.font=this.font;
+        canvas2D.fillStyle=this.color;
         canvas2D.fillText(this.text, this.x, this.y + 10);
     }
 }
@@ -43,6 +46,7 @@ class Bitmap extends DisplayObject {
             let bitmap = new Image();
             bitmap.src = this.texture;
             bitmap.onload = () => {
+                canvas2D.scale(this.scaleX,this.scaleY);
                 canvas2D.drawImage(bitmap, this.x, this.y, this.width, this.height);
                 this.cache=bitmap;
             }

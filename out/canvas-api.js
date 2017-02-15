@@ -7,6 +7,10 @@ var DisplayObject = (function () {
     function DisplayObject() {
         this.x = 0;
         this.y = 0;
+        this.alpha = 1;
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.matrix = [1, 0, 0, 0, 1, 0];
     }
     DisplayObject.prototype.draw = function (canvas2D) {
     };
@@ -34,9 +38,12 @@ var TextField = (function (_super) {
         _super.apply(this, arguments);
         this.text = "";
         this.font = "";
+        this.color = "#000000";
     }
     TextField.prototype.draw = function (canvas2D) {
+        canvas2D.globalAlpha = this.alpha;
         canvas2D.font = this.font;
+        canvas2D.fillStyle = this.color;
         canvas2D.fillText(this.text, this.x, this.y + 10);
     };
     return TextField;
@@ -54,6 +61,7 @@ var Bitmap = (function (_super) {
             var bitmap_1 = new Image();
             bitmap_1.src = this.texture;
             bitmap_1.onload = function () {
+                canvas2D.scale(_this.scaleX, _this.scaleY);
                 canvas2D.drawImage(bitmap_1, _this.x, _this.y, _this.width, _this.height);
                 _this.cache = bitmap_1;
             };
@@ -69,6 +77,8 @@ var shape = (function (_super) {
     function shape() {
         _super.apply(this, arguments);
     }
+    shape.prototype.draw = function (canvas2D) {
+    };
     return shape;
 }(DisplayObject));
 //# sourceMappingURL=canvas-api.js.map
