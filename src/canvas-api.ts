@@ -18,9 +18,13 @@ class EventManager{
 class MyEvent{
     eventType="";
     ifCapture=false;
-    constructor(eventType:string,ifCapture:boolean){
+    target:DisplayObject;
+    func:Function;
+    constructor(eventType:string,func:Function,target:DisplayObject,ifCapture:boolean){
         this.eventType=eventType;
         this.ifCapture=ifCapture;
+        this.func=func;
+        this.target=target;
     }
 }
 
@@ -58,17 +62,10 @@ abstract class DisplayObject implements Drawable {
         canvas2D.globalAlpha=this.absoluteAlpha;
         this.render(canvas2D);
     }
-    addEventListener(eventType:string,ifCapture:boolean){
+    addEventListener(eventType:string,func:Function,target:DisplayObject,ifCapture:boolean){
         //if this.eventArray doesn't contain e
-        let e=new MyEvent(eventType,ifCapture);
+        let e=new MyEvent(eventType,func,target,ifCapture);
         this.eventArray.push(e);
-    }
-    dispatchEvent(e:MyEvent){
-        for(let x of this.eventArray){
-            if(x.ifCapture=false){
-
-            }
-        }
     }
 
     abstract render(canvas2D: CanvasRenderingContext2D);
@@ -87,9 +84,10 @@ class DisplayObjectContainer extends DisplayObject {
     }
     hitTest(x: number, y: number) {
         let eventManager = EventManager.getInstance();
-        if (this.eventArray.length != 0) {
+        if(this.eventArray.length!=0){
             eventManager.targetArray.push(this);
         }
+            
         for (let i = this.children.length - 1; i >= 0; i--) {
             let child = this.children[i];
             let invertChildMatrix = new math.Matrix();
@@ -114,7 +112,7 @@ class TextField extends DisplayObject {
     }
     hitTest(x:number,y:number){
         //temproray height 20,width 10
-        let rect=new math.Rectangle(0,0,this.text.length*10, 20);
+        let rect=new math.Rectangle(0,0,this.text.length*10, 40);
         if (rect.isPointIn(x, y)) {
             let eventManager=EventManager.getInstance();
             if(this.eventArray.length!=0){
@@ -123,6 +121,7 @@ class TextField extends DisplayObject {
             return this;
         }
         else {
+            console.log("not hit");
             return null;
         }
     }
@@ -148,7 +147,7 @@ class Bitmap extends DisplayObject {
             var rect = new math.Rectangle(0, 0, this.imageCache.width, this.imageCache.height);
             if (rect.isPointIn(x, y)) {
                 let eventManager = EventManager.getInstance();
-                if (this.eventArray.length != 0) {
+                if(this.eventArray.length!=0){
                     eventManager.targetArray.push(this);
                 }
                 return this;

@@ -19,11 +19,13 @@ var EventManager = (function () {
     return EventManager;
 }());
 var MyEvent = (function () {
-    function MyEvent(eventType, ifCapture) {
+    function MyEvent(eventType, func, target, ifCapture) {
         this.eventType = "";
         this.ifCapture = false;
         this.eventType = eventType;
         this.ifCapture = ifCapture;
+        this.func = func;
+        this.target = target;
     }
     return MyEvent;
 }());
@@ -56,17 +58,10 @@ var DisplayObject = (function () {
         canvas2D.globalAlpha = this.absoluteAlpha;
         this.render(canvas2D);
     };
-    DisplayObject.prototype.addEventListener = function (eventType, ifCapture) {
+    DisplayObject.prototype.addEventListener = function (eventType, func, target, ifCapture) {
         //if this.eventArray doesn't contain e
-        var e = new MyEvent(eventType, ifCapture);
+        var e = new MyEvent(eventType, func, target, ifCapture);
         this.eventArray.push(e);
-    };
-    DisplayObject.prototype.dispatchEvent = function (e) {
-        for (var _i = 0, _a = this.eventArray; _i < _a.length; _i++) {
-            var x = _a[_i];
-            if (x.ifCapture = false) {
-            }
-        }
     };
     return DisplayObject;
 }());
@@ -119,7 +114,7 @@ var TextField = (function (_super) {
     };
     TextField.prototype.hitTest = function (x, y) {
         //temproray height 20,width 10
-        var rect = new math.Rectangle(0, 0, this.text.length * 10, 20);
+        var rect = new math.Rectangle(0, 0, this.text.length * 10, 40);
         if (rect.isPointIn(x, y)) {
             var eventManager = EventManager.getInstance();
             if (this.eventArray.length != 0) {
@@ -128,6 +123,7 @@ var TextField = (function (_super) {
             return this;
         }
         else {
+            console.log("not hit");
             return null;
         }
     };
