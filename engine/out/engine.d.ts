@@ -56,7 +56,6 @@ declare namespace engine {
         constructor(eventType: string, func: Function, target: DisplayObject, ifCapture: boolean);
     }
     interface Drawable {
-        draw(context2D: CanvasRenderingContext2D): any;
     }
     abstract class DisplayObject implements Drawable {
         x: number;
@@ -70,28 +69,29 @@ declare namespace engine {
         globalMatrix: Matrix;
         parent: DisplayObjectContainer;
         touchEnabled: boolean;
+        type: string;
         eventArray: MyEvent[];
-        constructor();
-        draw(context2D: CanvasRenderingContext2D): void;
+        constructor(type: string);
+        update(): void;
         addEventListener(eventType: string, func: Function, target: DisplayObject, ifCapture: boolean): void;
         abstract hitTest(x: number, y: number): DisplayObject;
-        abstract render(context2D: CanvasRenderingContext2D): any;
     }
     class Bitmap extends DisplayObject {
         imageCache: HTMLImageElement;
         texture: string;
-        render(context2D: CanvasRenderingContext2D): void;
+        constructor();
         hitTest(x: number, y: number): this;
     }
     class TextField extends DisplayObject {
         text: string;
-        private _measureTextWidth;
-        render(context2D: CanvasRenderingContext2D): void;
+        constructor();
+        _measureTextWidth: number;
         hitTest(x: number, y: number): this;
     }
     class DisplayObjectContainer extends DisplayObject {
         children: DisplayObject[];
-        render(context2D: any): void;
+        constructor();
+        update(): void;
         addChild(child: DisplayObject): void;
         removeChild(child: DisplayObject): void;
         hitTest(x: any, y: any): DisplayObject;

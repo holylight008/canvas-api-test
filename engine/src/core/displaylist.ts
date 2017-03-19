@@ -42,7 +42,7 @@ namespace engine {
     }
 
     export interface Drawable {
-        draw(context2D: CanvasRenderingContext2D);
+        
     }
 
     export abstract class DisplayObject implements Drawable {
@@ -69,16 +69,18 @@ namespace engine {
 
         touchEnabled: boolean;
 
+        type:string;
+
         eventArray:MyEvent[];
 
-        constructor() {
+        constructor(type:string) {
             this.localMatrix = new Matrix();
             this.globalMatrix = new Matrix();
             this.eventArray=new Array();
+            this.type=type;
         }
 
-        // 模板方法模式        
-        draw(context2D: CanvasRenderingContext2D) {
+        update(){
             this.localMatrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
             if (this.parent) {
                 this.globalMatrix = matrixAppendMatrix(this.localMatrix, this.parent.globalMatrix);
@@ -86,17 +88,12 @@ namespace engine {
             else {
                 this.globalMatrix = this.localMatrix;
             }
-            context2D.setTransform(this.globalMatrix.a, this.globalMatrix.b, this.globalMatrix.c, this.globalMatrix.d, this.globalMatrix.tx, this.globalMatrix.ty);
-
             if (this.parent) {
                 this.globalAlpha = this.parent.globalAlpha * this.alpha;
             }
             else {
                 this.globalAlpha = this.alpha;
             }
-            context2D.globalAlpha = this.globalAlpha;
-            this.render(context2D);
-
         }
 
         addEventListener(eventType: string, func: Function, target: DisplayObject, ifCapture: boolean) {
@@ -107,9 +104,6 @@ namespace engine {
 
         abstract hitTest(x: number, y: number): DisplayObject
 
-        abstract render(context2D: CanvasRenderingContext2D)
-
-
     }
 
 
@@ -118,18 +112,8 @@ namespace engine {
         imageCache: HTMLImageElement;
         texture: string;
 
-        render(context2D: CanvasRenderingContext2D) {
-            if (this.imageCache == null) {
-                let bitmap = new Image();
-                bitmap.src = this.texture;
-                bitmap.onload = () => {
-                    context2D.drawImage(bitmap, 0, 0);
-                    this.imageCache = bitmap;
-                }
-            } else {
-                this.imageCache.src=this.texture;
-                context2D.drawImage(this.imageCache, 0, 0);
-            }
+        constructor(){
+            super("Bitmap");
         }
 
         hitTest(x: number, y: number) {
@@ -165,12 +149,11 @@ namespace engine {
 
         text: string = "";
 
-        private _measureTextWidth: number = 0;
-
-        render(context2D: CanvasRenderingContext2D) {
-            context2D.fillText(this.text, 0, 10);
-            this._measureTextWidth = context2D.measureText(this.text).width;
+        constructor(){
+            super("TextField");
         }
+
+        _measureTextWidth: number = 0;
 
         hitTest(x: number, y: number) {
             var rect = new Rectangle();
@@ -192,9 +175,14 @@ namespace engine {
 
         children: DisplayObject[] = [];
 
-        render(context2D) {
-            for (let drawable of this.children) {
-                drawable.draw(context2D);
+        constructor() {
+            super("DisplayObjectContainer");
+        }
+
+        update() {
+            super.update();
+            for (let displayobject of this.children) {
+                displayobject.update();
             }
         }
 

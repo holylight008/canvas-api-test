@@ -193,7 +193,7 @@ var engine;
     }());
     engine.MyEvent = MyEvent;
     var DisplayObject = (function () {
-        function DisplayObject() {
+        function DisplayObject(type) {
             this.x = 0;
             this.y = 0;
             this.scaleX = 1;
@@ -204,9 +204,9 @@ var engine;
             this.localMatrix = new engine.Matrix();
             this.globalMatrix = new engine.Matrix();
             this.eventArray = new Array();
+            this.type = type;
         }
-        // 模板方法模式        
-        DisplayObject.prototype.draw = function (context2D) {
+        DisplayObject.prototype.update = function () {
             this.localMatrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
             if (this.parent) {
                 this.globalMatrix = engine.matrixAppendMatrix(this.localMatrix, this.parent.globalMatrix);
@@ -214,15 +214,12 @@ var engine;
             else {
                 this.globalMatrix = this.localMatrix;
             }
-            context2D.setTransform(this.globalMatrix.a, this.globalMatrix.b, this.globalMatrix.c, this.globalMatrix.d, this.globalMatrix.tx, this.globalMatrix.ty);
             if (this.parent) {
                 this.globalAlpha = this.parent.globalAlpha * this.alpha;
             }
             else {
                 this.globalAlpha = this.alpha;
             }
-            context2D.globalAlpha = this.globalAlpha;
-            this.render(context2D);
         };
         DisplayObject.prototype.addEventListener = function (eventType, func, target, ifCapture) {
             //if this.eventArray doesn't contain e
@@ -235,23 +232,8 @@ var engine;
     var Bitmap = (function (_super) {
         __extends(Bitmap, _super);
         function Bitmap() {
-            return _super !== null && _super.apply(this, arguments) || this;
+            return _super.call(this, "Bitmap") || this;
         }
-        Bitmap.prototype.render = function (context2D) {
-            var _this = this;
-            if (this.imageCache == null) {
-                var bitmap_1 = new Image();
-                bitmap_1.src = this.texture;
-                bitmap_1.onload = function () {
-                    context2D.drawImage(bitmap_1, 0, 0);
-                    _this.imageCache = bitmap_1;
-                };
-            }
-            else {
-                this.imageCache.src = this.texture;
-                context2D.drawImage(this.imageCache, 0, 0);
-            }
-        };
         Bitmap.prototype.hitTest = function (x, y) {
             if (this.imageCache) {
                 var rect = new engine.Rectangle();
@@ -281,15 +263,11 @@ var engine;
     var TextField = (function (_super) {
         __extends(TextField, _super);
         function TextField() {
-            var _this = _super !== null && _super.apply(this, arguments) || this;
+            var _this = _super.call(this, "TextField") || this;
             _this.text = "";
             _this._measureTextWidth = 0;
             return _this;
         }
-        TextField.prototype.render = function (context2D) {
-            context2D.fillText(this.text, 0, 10);
-            this._measureTextWidth = context2D.measureText(this.text).width;
-        };
         TextField.prototype.hitTest = function (x, y) {
             var rect = new engine.Rectangle();
             rect.width = this._measureTextWidth;
@@ -310,14 +288,15 @@ var engine;
     var DisplayObjectContainer = (function (_super) {
         __extends(DisplayObjectContainer, _super);
         function DisplayObjectContainer() {
-            var _this = _super !== null && _super.apply(this, arguments) || this;
+            var _this = _super.call(this, "DisplayObjectContainer") || this;
             _this.children = [];
             return _this;
         }
-        DisplayObjectContainer.prototype.render = function (context2D) {
+        DisplayObjectContainer.prototype.update = function () {
+            _super.prototype.update.call(this);
             for (var _i = 0, _a = this.children; _i < _a.length; _i++) {
-                var drawable = _a[_i];
-                drawable.draw(context2D);
+                var displayobject = _a[_i];
+                displayobject.update();
             }
         };
         DisplayObjectContainer.prototype.addChild = function (child) {
@@ -395,6 +374,7 @@ var engine;
     engine.run = function (canvas) {
         var stage = new engine.DisplayObjectContainer();
         var context2D = canvas.getContext("2d");
+        var render = new CanvasRenderer(stage, context2D);
         var lastNow = Date.now();
         var frameHandler = function () {
             var now = Date.now();
@@ -402,7 +382,8 @@ var engine;
             engine.Ticker.getInstance().notify(deltaTime);
             context2D.clearRect(0, 0, 400, 400);
             context2D.save();
-            stage.draw(context2D);
+            stage.update();
+            render.render();
             context2D.restore();
             lastNow = now;
             window.requestAnimationFrame(frameHandler);
@@ -477,4 +458,53 @@ var engine;
         };
         return stage;
     };
+    var CanvasRenderer = (function () {
+        function CanvasRenderer(stage, context2D) {
+            this.stage = stage;
+            this.context2D = context2D;
+        }
+        CanvasRenderer.prototype.render = function () {
+            var stage = this.stage;
+            var context2D = this.context2D;
+            this.renderContainer(stage);
+        };
+        CanvasRenderer.prototype.renderContainer = function (container) {
+            for (var _i = 0, _a = container.children; _i < _a.length; _i++) {
+                var child = _a[_i];
+                var context2D = this.context2D;
+                context2D.globalAlpha = child.globalAlpha;
+                var m = child.globalMatrix;
+                context2D.setTransform(m.a, m.b, m.c, m.d, m.tx, m.ty);
+                if (child.type == "Bitmap") {
+                    this.renderBitmap(child);
+                }
+                else if (child.type == "TextField") {
+                    this.renderTextField(child);
+                }
+                else if (child.type == "DisplayObjectContainer") {
+                    this.renderContainer(child);
+                }
+            }
+        };
+        CanvasRenderer.prototype.renderBitmap = function (bitmap) {
+            var _this = this;
+            if (bitmap.imageCache == null) {
+                var img_1 = new Image();
+                img_1.src = bitmap.texture;
+                img_1.onload = function () {
+                    _this.context2D.drawImage(img_1, 0, 0);
+                    bitmap.imageCache = img_1;
+                };
+            }
+            else {
+                bitmap.imageCache.src = bitmap.texture;
+                this.context2D.drawImage(bitmap.imageCache, 0, 0);
+            }
+        };
+        CanvasRenderer.prototype.renderTextField = function (textField) {
+            this.context2D.fillText(textField.text, 0, 10);
+            textField._measureTextWidth = this.context2D.measureText(textField.text).width;
+        };
+        return CanvasRenderer;
+    }());
 })(engine || (engine = {}));
